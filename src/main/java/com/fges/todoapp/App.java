@@ -6,16 +6,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.MissingNode;
+import com.fges.todoapp.services.command.CommandGenerator;
+import com.fges.todoapp.services.command.CommandService;
+import com.fges.todoapp.services.command.InsertCommand;
+import com.fges.todoapp.services.datasource.DataSourceGenerator;
+import com.fges.todoapp.services.datasource.JSONService;
+import com.fges.todoapp.services.datasource.ToDoService;
+import com.fges.todoapp.tools.YAMLParser;
 import org.apache.commons.cli.*;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -54,69 +60,20 @@ public class App {
 
         String command = positionalArgs.get(0);
 
-        Path filePath = Paths.get(fileName);
+        // Get Service
+        DataSourceGenerator dataSourceGenerator = new DataSourceGenerator(fileName);
+        ToDoService service = dataSourceGenerator.getService();
 
-        String fileContent = "";
-
-        if (Files.exists(filePath)) {
-            fileContent = Files.readString(filePath);
-        }
-
-        if (command.equals("insert")) {
-            if (positionalArgs.size() < 2) {
+        // Get Command and Arguments
+        if (command.equals("insert") && positionalArgs.size() < 2) {
                 System.err.println("Missing TODO name");
                 return 1;
-            }
-            String todo = positionalArgs.get(1);
-
-            if (fileName.endsWith(".json")) {
-                // JSON
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode actualObj = mapper.readTree(fileContent);
-                if (actualObj instanceof MissingNode) {
-                    // Node was not reconised
-                    actualObj = JsonNodeFactory.instance.arrayNode();
-                }
-
-                if (actualObj instanceof ArrayNode arrayNode) {
-                    arrayNode.add(todo);
-                }
-
-                Files.writeString(filePath, actualObj.toString());
-            }
-            if (fileName.endsWith(".csv")) {
-                // CSV
-                if (!fileContent.endsWith("\n") && !fileContent.isEmpty()) {
-                    fileContent += "\n";
-                }
-                fileContent += todo;
-
-                Files.writeString(filePath, fileContent);
-            }
         }
-
-
-        if (command.equals("list")) {
-            if (fileName.endsWith(".json")) {
-                // JSON
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode actualObj = mapper.readTree(fileContent);
-                if (actualObj instanceof MissingNode) {
-                    // Node was not recognised
-                    actualObj = JsonNodeFactory.instance.arrayNode();
-                }
-
-                if (actualObj instanceof ArrayNode arrayNode) {
-                    arrayNode.forEach(node -> System.out.println("- " + node.toString()));
-                }
-            }
-            if (fileName.endsWith(".csv")) {
-                // CSV
-                System.out.println(Arrays.stream(fileContent.split("\n"))
-                        .map(todo -> "- " + todo)
-                        .collect(Collectors.joining("\n"))
-                );
-            }
+        else{
+            String todo = positionalArgs.get(1);
+            CommandGenerator commandGenerator = new CommandGenerator(command,todo,service);
+            CommandService commandService = commandGenerator.getService();
+            commandService.execute();
         }
 
         System.err.println("Done.");

@@ -1,0 +1,15 @@
+# DataSource Configuration
+sources:
+  - extension: csv
+    class: com.fges.todoapp.services.datasource.CSVService
+  - extension: json
+    class: com.fges.todoapp.services.datasource.JSONService
+
+# Commands Configuration
+commands:
+  - name: insert
+    class: com.fges.todoapp.services.command.InsertCommand
+  - name: list
+    class: com.fges.todoapp.services.command.ListCommand
+  - name: migrate
+    class: com.fges.todoapp.services.command.MigrateCommand
